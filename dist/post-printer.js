@@ -105,6 +105,7 @@ var PosPrinter = /** @class */ (function () {
             }));*/
             mainWindow.loadFile(__dirname + '/pos.html');
             mainWindow.webContents.on('did-finish-load', function () { return __awaiter(_this, void 0, void 0, function () {
+                var delay;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0: 
@@ -129,11 +130,12 @@ var PosPrinter = /** @class */ (function () {
                             // }
                             // else start initialize render prcess page
                             _a.sent();
-                            /**
-                             * Render print data as html in the mainwindow render process
-                             *
-                             */
-                            return [2 /*return*/, PosPrinter.renderPrintDocument(mainWindow, data)
+                            delay = new Promise(function (resolve, reject) {
+                                setTimeout(function () {
+                                    resolve();
+                                }, 1000);
+                            });
+                            return [2 /*return*/, delay.then(function () { return PosPrinter.renderPrintDocument(mainWindow, data)
                                     .then(function () {
                                     if (!options.preview) {
                                         mainWindow.webContents.print({
@@ -159,7 +161,7 @@ var PosPrinter = /** @class */ (function () {
                                         resolve({ complete: true });
                                     }
                                 })
-                                    .catch(function (err) { return reject(err); })];
+                                    .catch(function (err) { return reject(err); }); })];
                     }
                 });
             }); });
@@ -171,7 +173,7 @@ var PosPrinter = /** @class */ (function () {
      * @Return {Promise}
      * @description Render the print data in the render process
      *
-    */
+     */
     PosPrinter.renderPrintDocument = function (window, data) {
         var _this = this;
         return new Promise(function (resolve, reject) {
@@ -212,7 +214,7 @@ exports.PosPrinter = PosPrinter;
  * @function sendMsg
  * @description Sends messages to the render process to render the data specified in the PostPrintDate interface and recieves a status of true
  *
-*/
+ */
 function sendIpcMsg(channel, webContents, arg) {
     return new Promise(function (resolve, reject) {
         ipcMain.once(channel + "-reply", function (event, result) {

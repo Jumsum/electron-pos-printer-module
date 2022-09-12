@@ -85,7 +85,7 @@ export class PosPrinter {
                 const delay = new Promise((resolve, reject) => {
                    setTimeout(() => {
                       resolve();
-                   }, 1000);
+                   }, 5000);
                 });
 
                 return delay.then(() => PosPrinter.renderPrintDocument(mainWindow, data)

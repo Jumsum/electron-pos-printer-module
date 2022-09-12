@@ -133,7 +133,7 @@ var PosPrinter = /** @class */ (function () {
                             delay = new Promise(function (resolve, reject) {
                                 setTimeout(function () {
                                     resolve();
-                                }, 1000);
+                                }, 5000);
                             });
                             return [2 /*return*/, delay.then(function () { return PosPrinter.renderPrintDocument(mainWindow, data)
                                     .then(function () {

@@ -32,7 +32,9 @@
     "url": "https://github.com/Hubertformin/electron-pos-printer/issues"
   },
   "homepage": "https://github.com/Hubertformin/electron-pos-printer#readme",
-  "dependencies": {},
+  "dependencies": {
+    "electron-log": "^4.4.8"
+  },
   "devDependencies": {
     "@types/node": "^16.9.2",
     "chai": "^4.2.0",

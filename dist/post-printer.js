@@ -40,6 +40,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PosPrinter = void 0;
+var log = require('electron-log');
+log.transports.file.resolvePath = function () { return __dirname + "/logs/main.log"; };
 if (process.type == 'renderer') {
     throw new Error('electron-pos-printer: use remote.require("electron-pos-printer") in render process');
 }
@@ -66,6 +68,7 @@ var PosPrinter = /** @class */ (function () {
     PosPrinter.print = function (data, options) {
         var _this = this;
         return new Promise(function (resolve, reject) {
+            console.log(data);
             // reject if printer name is not set in no preview mode
             if (!options.preview && !options.printerName) {
                 reject(new Error('A printer name is required').toString());
@@ -78,6 +81,7 @@ var PosPrinter = /** @class */ (function () {
                 setTimeout(function () {
                     if (!printedState) {
                         var errorMsg = window_print_error ? window_print_error : 'TimedOut';
+                        log.error('[TimedOut]', errorMsg);
                         reject(errorMsg);
                         printedState = true;
                     }
@@ -133,7 +137,7 @@ var PosPrinter = /** @class */ (function () {
                             delay = new Promise(function (resolve, reject) {
                                 setTimeout(function () {
                                     resolve();
-                                }, 5000);
+                                }, 1000);
                             });
                             return [2 /*return*/, delay.then(function () { return PosPrinter.renderPrintDocument(mainWindow, data)
                                     .then(function () {
@@ -147,10 +151,12 @@ var PosPrinter = /** @class */ (function () {
                                         }, function (arg, err) {
                                             // console.log(arg, err);
                                             if (err) {
+                                                log.error('[if-error]', err);
                                                 window_print_error = err;
                                                 reject(err);
                                             }
                                             if (!printedState) {
+                                                log.info('Printer is no longer in a printed state');
                                                 resolve({ complete: arg });
                                                 printedState = true;
                                             }
@@ -158,10 +164,14 @@ var PosPrinter = /** @class */ (function () {
                                         });
                                     }
                                     else {
+                                        log.info('Printer has not printed because it\'s in preview mode');
                                         resolve({ complete: true });
                                     }
                                 })
-                                    .catch(function (err) { return reject(err); }); })];
+                                    .catch(function (err) {
+                                    log.error('[CATCH]', err);
+                                    reject(err);
+                                }); })];
                     }
                 });
             }); });
@@ -183,6 +193,7 @@ var PosPrinter = /** @class */ (function () {
                         case 0:
                             if (line.type === 'image' && !line.path) {
                                 window.close();
+                                log.error('[Image path]', 'An Image path is required for type image');
                                 reject(new Error('An Image path is required for type image').toString());
                                 return [2 /*return*/];
                             }
@@ -190,10 +201,12 @@ var PosPrinter = /** @class */ (function () {
                                     .then(function (result) {
                                     if (!result.status) {
                                         window.close();
+                                        log.error('[render-line - !result.status]', result.error);
                                         reject(result.error);
                                         return;
                                     }
                                 }).catch(function (error) {
+                                    log.error('[render-line - catch]', error);
                                     reject(error);
                                     return;
                                 })];
@@ -219,9 +232,11 @@ function sendIpcMsg(channel, webContents, arg) {
     return new Promise(function (resolve, reject) {
         ipcMain.once(channel + "-reply", function (event, result) {
             if (result.status) {
+                log.info('[sendIpcMsg] Success', result);
                 resolve(result);
             }
             else {
+                log.error('[sendIpcMsg]', result.error);
                 reject(result.error);
             }
         });

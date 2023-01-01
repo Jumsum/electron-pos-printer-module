@@ -4,10 +4,13 @@
 
 import { PosPrintData, PosPrintOptions } from "./models";
 
+const log = require('electron-log');
+
+log.transports.file.resolvePath = () => __dirname + "/logs/main.log";
+
 if((process as any).type == 'renderer') {
     throw new Error('electron-pos-printer: use remote.require("electron-pos-printer") in render process');
 }
-
 
 const {BrowserWindow, ipcMain} = require('electron');
 // ipcMain.on('pos-print', (event, arg)=> {
@@ -29,6 +32,7 @@ export class PosPrinter {
      */
     public static print(data: PosPrintData[], options: PosPrintOptions): Promise<any> {
         return new Promise((resolve, reject) => {
+            console.log(data);
             // reject if printer name is not set in no preview mode
             if(!options.preview && !options.printerName) {
                 reject(new Error('A printer name is required').toString());
@@ -41,6 +45,7 @@ export class PosPrinter {
                 setTimeout(() => {
                     if(!printedState) {
                         const errorMsg = window_print_error ? window_print_error : 'TimedOut';
+                        log.error('[TimedOut]', errorMsg);
                         reject(errorMsg);
                         printedState = true;
                     }
@@ -85,7 +90,7 @@ export class PosPrinter {
                 const delay = new Promise((resolve, reject) => {
                    setTimeout(() => {
                       resolve();
-                   }, 5000);
+                   }, 1000);
                 });
 
                 return delay.then(() => PosPrinter.renderPrintDocument(mainWindow, data)
@@ -100,20 +105,26 @@ export class PosPrinter {
                             }, (arg, err) => {
                                 // console.log(arg, err);
                                 if(err) {
+                                    log.error('[if-error]', err);
                                     window_print_error = err;
                                     reject(err);
                                 }
                                 if(!printedState) {
+                                    log.info('Printer is no longer in a printed state');
                                     resolve({complete: arg});
                                     printedState = true;
                                 }
                                 mainWindow.close();
                             })
                         } else {
+                            log.info('Printer has not printed because it\'s in preview mode');
                             resolve({complete: true});
                         }
                     })
-                    .catch(err => reject(err)));
+                    .catch(err => {
+                        log.error('[CATCH]', err);
+                        reject(err);
+                    }));
             })
         });
     }
@@ -130,6 +141,7 @@ export class PosPrinter {
             data.forEach(async (line, lineIndex) => {
                 if(line.type === 'image' && !line.path) {
                     window.close();
+                    log.error('[Image path]', 'An Image path is required for type image');
                     reject(new Error('An Image path is required for type image').toString());
                     return;
                 }
@@ -137,10 +149,12 @@ export class PosPrinter {
                     .then((result: any) => {
                         if(!result.status) {
                             window.close();
+                            log.error('[render-line - !result.status]', result.error);
                             reject(result.error);
                             return;
                         }
                     }).catch((error) => {
+                        log.error('[render-line - catch]', error);
                         reject(error);
                         return;
                     });
@@ -160,8 +174,10 @@ function sendIpcMsg(channel: any, webContents: any, arg: any) {
     return new Promise((resolve, reject) => {
         ipcMain.once(`${channel}-reply`, function (event, result) {
             if(result.status) {
+                log.info('[sendIpcMsg] Success', result);
                 resolve(result);
             } else {
+                log.error('[sendIpcMsg]', result.error);
                 reject(result.error);
             }
         });
